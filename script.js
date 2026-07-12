@@ -2,8 +2,41 @@
 const taskInput = document.getElementById('taskInput');
 const addBtn = document.getElementById('addBtn');
 const taskList = document.getElementById('taskList');
+const container = document.querySelector('.container');
 
 const API_URL = 'https://jsonplaceholder.typicode.com/todos';
+
+// Afficher un message d'erreur temporaire à l'utilisateur
+function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.classList.add('error-message');
+    errorDiv.textContent = message;
+    container.insertBefore(errorDiv, taskList);
+
+    // Le message disparaît après 4 secondes
+    setTimeout(() => {
+        errorDiv.remove();
+    }, 4000);
+}
+
+// Afficher/masquer l'indicateur de chargement
+function setLoading(isLoading) {
+    let loadingDiv = document.getElementById('loadingIndicator');
+
+    if (isLoading) {
+        if (!loadingDiv) {
+            loadingDiv = document.createElement('div');
+            loadingDiv.id = 'loadingIndicator';
+            loadingDiv.classList.add('loading');
+            loadingDiv.textContent = 'Chargement des tâches...';
+            container.insertBefore(loadingDiv, taskList);
+        }
+    } else {
+        if (loadingDiv) {
+            loadingDiv.remove();
+        }
+    }
+}
 
 // Fonction pour afficher une tâche dans le DOM
 function addTaskToDOM(taskText, taskId = null) {
@@ -30,8 +63,14 @@ function addTaskToDOM(taskText, taskId = null) {
 
 // Récupérer les tâches depuis l'API au chargement de la page
 async function fetchTasks() {
+    setLoading(true);
     try {
         const response = await fetch(`${API_URL}?_limit=5`);
+
+        if (!response.ok) {
+            throw new Error('Réponse invalide du serveur');
+        }
+
         const data = await response.json();
 
         data.forEach(task => {
@@ -39,10 +78,13 @@ async function fetchTasks() {
         });
     } catch (error) {
         console.error('Erreur lors de la récupération des tâches :', error);
+        showError('Impossible de charger les tâches. Vérifiez votre connexion.');
+    } finally {
+        setLoading(false);
     }
 }
 
-// Ajouter une tâche via l'API (simulation, JSONPlaceholder ne sauvegarde pas réellement)
+// Ajouter une tâche via l'API
 async function addTaskToAPI(taskText) {
     try {
         const response = await fetch(API_URL, {
@@ -56,22 +98,33 @@ async function addTaskToAPI(taskText) {
             }),
         });
 
+        if (!response.ok) {
+            throw new Error('Échec de l\'envoi de la tâche');
+        }
+
         const data = await response.json();
         console.log('Tâche envoyée à l\'API :', data);
     } catch (error) {
         console.error('Erreur lors de l\'ajout de la tâche :', error);
+        showError('La tâche a été ajoutée localement, mais pas synchronisée avec le serveur.');
     }
 }
 
 // Supprimer une tâche via l'API
 async function deleteTaskFromAPI(taskId) {
     try {
-        await fetch(`${API_URL}/${taskId}`, {
+        const response = await fetch(`${API_URL}/${taskId}`, {
             method: 'DELETE',
         });
+
+        if (!response.ok) {
+            throw new Error('Échec de la suppression');
+        }
+
         console.log(`Tâche ${taskId} supprimée de l'API`);
     } catch (error) {
         console.error('Erreur lors de la suppression :', error);
+        showError('Erreur lors de la suppression sur le serveur.');
     }
 }
 
