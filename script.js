@@ -6,7 +6,7 @@ const taskList = document.getElementById('taskList');
 const API_URL = 'https://jsonplaceholder.typicode.com/todos';
 
 // Fonction pour afficher une tâche dans le DOM
-function addTaskToDOM(taskText) {
+function addTaskToDOM(taskText, taskId = null) {
     const li = document.createElement('li');
 
     const span = document.createElement('span');
@@ -16,7 +16,10 @@ function addTaskToDOM(taskText) {
     deleteBtn.textContent = 'Supprimer';
     deleteBtn.classList.add('delete-btn');
 
-    deleteBtn.addEventListener('click', () => {
+    deleteBtn.addEventListener('click', async () => {
+        if (taskId) {
+            await deleteTaskFromAPI(taskId);
+        }
         li.remove();
     });
 
@@ -28,11 +31,11 @@ function addTaskToDOM(taskText) {
 // Récupérer les tâches depuis l'API au chargement de la page
 async function fetchTasks() {
     try {
-        const response = await fetch(`${API_URL}?_limit=5`); // On limite à 5 tâches pour l'exemple
+        const response = await fetch(`${API_URL}?_limit=5`);
         const data = await response.json();
 
         data.forEach(task => {
-            addTaskToDOM(task.title);
+            addTaskToDOM(task.title, task.id);
         });
     } catch (error) {
         console.error('Erreur lors de la récupération des tâches :', error);
@@ -57,6 +60,18 @@ async function addTaskToAPI(taskText) {
         console.log('Tâche envoyée à l\'API :', data);
     } catch (error) {
         console.error('Erreur lors de l\'ajout de la tâche :', error);
+    }
+}
+
+// Supprimer une tâche via l'API
+async function deleteTaskFromAPI(taskId) {
+    try {
+        await fetch(`${API_URL}/${taskId}`, {
+            method: 'DELETE',
+        });
+        console.log(`Tâche ${taskId} supprimée de l'API`);
+    } catch (error) {
+        console.error('Erreur lors de la suppression :', error);
     }
 }
 
